@@ -1,0 +1,89 @@
+# Translation file
+
+# Module label 'ModuleMpagoName'
+ModuleMpagoName = Mercado Pago
+# Module description 'ModuleMpagoDesc'
+ModuleMpagoDesc = Online payment of invoices and orders with Mercado Pago Checkout Pro (Argentina)
+
+# Scheduled jobs
+MpagoCronProcessEvents = Mercado Pago: process notifications
+MpagoCronProcessEventsDesc = Reads the notifications received from Mercado Pago and records the payments they announce.
+MpagoCronPollOpenOrders = Mercado Pago: check open payments
+MpagoCronPollOpenOrdersDesc = Asks Mercado Pago for the state of the payments that are not settled yet, in case a notification was missed.
+
+# Payment page
+MpagoDoPayment = Pay with Mercado Pago
+MpagoDoPaymentSub = Card, account money or instalments
+MpagoYourEmail = Your e-mail (required by Mercado Pago)
+MpagoPaidThroughMercadoPago = A payment made with Mercado Pago was recorded for this document.
+MpagoPaymentBeingProcessed = A payment made with Mercado Pago is being processed for this document.
+
+# Return page
+MpagoReturnUnknown = This payment link is not valid.
+MpagoReturnPaid = Payment received. Thank you!
+MpagoReturnPaidText = Your payment for %s was recorded.
+MpagoReturnReceived = Payment received
+MpagoReturnReceivedText = Mercado Pago confirmed your payment for %s. It will be recorded shortly; you do not need to pay again.
+MpagoReturnPending = Payment in progress
+MpagoReturnPendingText = Your payment for %s is not confirmed yet. Mercado Pago will let you know by e-mail when it is, and it will then be recorded here without any further action. You do not need to pay again.
+MpagoReturnFailed = The payment was not completed
+MpagoReturnFailedText = No payment was received for %s. You can try again.
+MpagoReturnTryAgain = Try again
+
+# Errors
+MpagoErrorNoAccessToken = The Mercado Pago access token is not set.
+MpagoErrorNoWebhookSecret = The secret signature of the webhook is not set: notifications are refused and payments are only recorded by the return page and the periodic check.
+MpagoErrorCurrencyNotARS = The currency must be ARS: this module only handles Argentine pesos.
+MpagoErrorNoBankAccount = No bank account is chosen for the payments.
+MpagoErrorBankAccountNotUsable = The bank account chosen for the payments does not exist or is closed.
+MpagoErrorBankAccountNotARS = The bank account chosen for the payments is not in ARS.
+MpagoErrorNoUser = No user is chosen to record the payments.
+MpagoErrorUserNotUsable = The user chosen to record the payments does not exist or is disabled.
+MpagoErrorNoPaymentMode = No payment mode is available for the payments.
+MpagoErrorNotConfigured = Payment with Mercado Pago is not available at the moment.
+MpagoErrorObjectNotFound = The document to pay was not found.
+MpagoErrorNothingToPay = There is nothing to pay on this document.
+MpagoErrorEmailRequired = Please enter a valid e-mail address to pay with Mercado Pago.
+MpagoErrorCannotStartPayment = The payment could not be started with Mercado Pago. Please try again in a few minutes.
+MpagoErrorBadInstallments = The maximum number of instalments must be between 1 and 36.
+
+# Setup
+MpagoSetup = Mercado Pago setup
+MpagoSetupDesc = Payments use Checkout Pro on the Orders API. Whether payments are test or real ones depends only on the access token you paste here.
+MpagoSetupIncomplete = The setup is not complete. The payment button is not offered until these points are solved:
+MpagoApiBaseUrlOverridden = The API address is overridden by the constant MPAGO_API_BASE_URL (%s). Remove it to talk to Mercado Pago.
+MpagoAccessToken = Access token
+MpagoAccessTokenHelp = Test or production access token of your Mercado Pago application. Stored encrypted and never shown again.
+MpagoWebhookSecret = Webhook secret signature
+MpagoWebhookSecretHelp = Shown by Mercado Pago in the webhook configuration of the application. Stored encrypted and never shown again.
+MpagoSecretSaved = Saved - leave empty to keep it
+MpagoSecretNotSet = Not set
+MpagoBankAccount = Bank account
+MpagoBankAccountHelp = Account that receives the payments in Dolibarr; it should represent your Mercado Pago account.
+MpagoPaymentMode = Payment mode
+MpagoPaymentModeHelp = Payment mode written on the recorded payments.
+MpagoUser = User for automatic actions
+MpagoUserHelp = Invoices are validated and payments recorded in the name of this user. It needs the permissions to create and validate invoices and to record payments and bank lines.
+MpagoExpirationHours = Checkout validity (hours)
+MpagoExpirationHoursHelp = Time the buyer has to pay once sent to Mercado Pago. Mercado Pago's own default is 24 hours.
+MpagoMaxInstallments = Maximum number of instalments
+MpagoMaxInstallmentsHelp = Between 1 and 36. Empty to keep the default of Mercado Pago.
+MpagoStatementDescriptor = Text on the card statement
+MpagoStatementDescriptorHelp = Empty to keep the one of your Mercado Pago account.
+MpagoTestConnection = Test the connection
+MpagoTestConnectionHelp = Sends one read request to Mercado Pago with the saved access token. Nothing is created.
+MpagoTestConnectionOk = Mercado Pago accepted the access token.
+MpagoTestConnectionTestToken = It is a test token (prefix TEST-).
+MpagoTestConnectionLastOrderTest = The last payment started from here was a test one.
+MpagoTestConnectionLastOrderLive = The last payment started from here was a real one.
+MpagoTestConnectionModeUnknown = The token itself does not tell whether it is a test or a production one: check which one you copied in the Mercado Pago panel.
+MpagoTestConnectionRefused = Mercado Pago refused the access token.
+MpagoTestConnectionError = Mercado Pago could not be reached or gave an unexpected answer: %s
+MpagoUrls = Addresses to configure at Mercado Pago
+MpagoUrlsDesc = In the Mercado Pago panel, open your application, then "Webhooks", paste the notification address for the test and the production modes, and select the event "Order (Mercado Pago)". Both addresses must be reachable from the Internet over HTTPS.
+MpagoWebhookUrl = Notification (webhook) address
+MpagoReturnUrl = Return page (sent with each payment, nothing to configure)
+MpagoProblems = Payments that need attention
+MpagoOrderId = Mercado Pago order
+MpagoLastCheck = Last check
+MpagoRecorded = recorded

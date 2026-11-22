@@ -1,0 +1,89 @@
+# Translation file
+
+# Module label 'ModuleMpagoName'
+ModuleMpagoName = Mercado Pago
+# Module description 'ModuleMpagoDesc'
+ModuleMpagoDesc = Cobro en línea de facturas y pedidos con Mercado Pago Checkout Pro (Argentina)
+
+# Scheduled jobs
+MpagoCronProcessEvents = Mercado Pago: procesar notificaciones
+MpagoCronProcessEventsDesc = Lee las notificaciones recibidas de Mercado Pago y registra los pagos que anuncian.
+MpagoCronPollOpenOrders = Mercado Pago: revisar pagos abiertos
+MpagoCronPollOpenOrdersDesc = Consulta a Mercado Pago el estado de los pagos que todavía no están resueltos, por si se perdió una notificación.
+
+# Payment page
+MpagoDoPayment = Pagar con Mercado Pago
+MpagoDoPaymentSub = Tarjeta, dinero en cuenta o cuotas
+MpagoYourEmail = Tu e-mail (lo requiere Mercado Pago)
+MpagoPaidThroughMercadoPago = Se registró un pago hecho con Mercado Pago para este documento.
+MpagoPaymentBeingProcessed = Hay un pago hecho con Mercado Pago en proceso para este documento.
+
+# Return page
+MpagoReturnUnknown = Este enlace de pago no es válido.
+MpagoReturnPaid = Pago recibido. ¡Gracias!
+MpagoReturnPaidText = Tu pago de %s quedó registrado.
+MpagoReturnReceived = Pago recibido
+MpagoReturnReceivedText = Mercado Pago confirmó tu pago de %s. Se va a registrar en breve; no hace falta que pagues de nuevo.
+MpagoReturnPending = Pago en proceso
+MpagoReturnPendingText = Tu pago de %s todavía no está confirmado. Mercado Pago te va a avisar por e-mail cuando lo esté, y se va a registrar acá sin que tengas que hacer nada más. No hace falta que pagues de nuevo.
+MpagoReturnFailed = El pago no se completó
+MpagoReturnFailedText = No se recibió ningún pago de %s. Podés intentarlo de nuevo.
+MpagoReturnTryAgain = Intentar de nuevo
+
+# Errors
+MpagoErrorNoAccessToken = Falta el access token de Mercado Pago.
+MpagoErrorNoWebhookSecret = Falta la firma secreta del webhook: las notificaciones se rechazan y los pagos solo se registran desde la página de retorno y la revisión periódica.
+MpagoErrorCurrencyNotARS = La moneda tiene que ser ARS: este módulo solo maneja pesos argentinos.
+MpagoErrorNoBankAccount = No hay una cuenta bancaria elegida para los pagos.
+MpagoErrorBankAccountNotUsable = La cuenta bancaria elegida para los pagos no existe o está cerrada.
+MpagoErrorBankAccountNotARS = La cuenta bancaria elegida para los pagos no está en ARS.
+MpagoErrorNoUser = No hay un usuario elegido para registrar los pagos.
+MpagoErrorUserNotUsable = El usuario elegido para registrar los pagos no existe o está deshabilitado.
+MpagoErrorNoPaymentMode = No hay un modo de pago disponible para los pagos.
+MpagoErrorNotConfigured = El pago con Mercado Pago no está disponible en este momento.
+MpagoErrorObjectNotFound = No se encontró el documento a pagar.
+MpagoErrorNothingToPay = No hay nada para pagar en este documento.
+MpagoErrorEmailRequired = Ingresá un e-mail válido para pagar con Mercado Pago.
+MpagoErrorCannotStartPayment = No se pudo iniciar el pago con Mercado Pago. Probá de nuevo en unos minutos.
+MpagoErrorBadInstallments = La cantidad máxima de cuotas tiene que estar entre 1 y 36.
+
+# Setup
+MpagoSetup = Configuración de Mercado Pago
+MpagoSetupDesc = Los cobros usan Checkout Pro con la API de Orders. Que los pagos sean de prueba o reales depende únicamente del access token que pegues acá.
+MpagoSetupIncomplete = La configuración no está completa. El botón de pago no se ofrece hasta resolver estos puntos:
+MpagoApiBaseUrlOverridden = La dirección de la API está reemplazada por la constante MPAGO_API_BASE_URL (%s). Quitala para hablar con Mercado Pago.
+MpagoAccessToken = Access token
+MpagoAccessTokenHelp = Access token de prueba o de producción de tu aplicación de Mercado Pago. Se guarda cifrado y no se vuelve a mostrar.
+MpagoWebhookSecret = Firma secreta del webhook
+MpagoWebhookSecretHelp = La muestra Mercado Pago en la configuración de webhooks de la aplicación. Se guarda cifrada y no se vuelve a mostrar.
+MpagoSecretSaved = Guardado - dejalo vacío para conservarlo
+MpagoSecretNotSet = Sin definir
+MpagoBankAccount = Cuenta bancaria
+MpagoBankAccountHelp = Cuenta que recibe los pagos en Dolibarr; debería representar tu cuenta de Mercado Pago.
+MpagoPaymentMode = Modo de pago
+MpagoPaymentModeHelp = Modo de pago que se anota en los pagos registrados.
+MpagoUser = Usuario para las acciones automáticas
+MpagoUserHelp = Las facturas se validan y los pagos se registran a nombre de este usuario. Necesita permisos para crear y validar facturas y para registrar pagos y movimientos bancarios.
+MpagoExpirationHours = Validez del checkout (horas)
+MpagoExpirationHoursHelp = Tiempo que tiene el comprador para pagar una vez enviado a Mercado Pago. El valor por defecto de Mercado Pago es 24 horas.
+MpagoMaxInstallments = Cantidad máxima de cuotas
+MpagoMaxInstallmentsHelp = Entre 1 y 36. Vacío para conservar el valor por defecto de Mercado Pago.
+MpagoStatementDescriptor = Texto en el resumen de la tarjeta
+MpagoStatementDescriptorHelp = Vacío para conservar el de tu cuenta de Mercado Pago.
+MpagoTestConnection = Probar la conexión
+MpagoTestConnectionHelp = Envía una consulta de lectura a Mercado Pago con el access token guardado. No se crea nada.
+MpagoTestConnectionOk = Mercado Pago aceptó el access token.
+MpagoTestConnectionTestToken = Es un token de prueba (prefijo TEST-).
+MpagoTestConnectionLastOrderTest = El último pago iniciado desde acá fue de prueba.
+MpagoTestConnectionLastOrderLive = El último pago iniciado desde acá fue real.
+MpagoTestConnectionModeUnknown = El token no indica por sí mismo si es de prueba o de producción: revisá cuál copiaste en el panel de Mercado Pago.
+MpagoTestConnectionRefused = Mercado Pago rechazó el access token.
+MpagoTestConnectionError = No se pudo contactar a Mercado Pago o respondió algo inesperado: %s
+MpagoUrls = Direcciones para configurar en Mercado Pago
+MpagoUrlsDesc = En el panel de Mercado Pago abrí tu aplicación, después "Webhooks", pegá la dirección de notificaciones para los modos de prueba y de producción, y seleccioná el evento "Order (Mercado Pago)". Las dos direcciones tienen que ser accesibles desde Internet por HTTPS.
+MpagoWebhookUrl = Dirección de notificaciones (webhook)
+MpagoReturnUrl = Página de retorno (se envía con cada pago, no hay nada que configurar)
+MpagoProblems = Pagos que requieren atención
+MpagoOrderId = Orden de Mercado Pago
+MpagoLastCheck = Última revisión
+MpagoRecorded = registrado
