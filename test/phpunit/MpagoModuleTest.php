@@ -77,7 +77,7 @@ class MpagoModuleTest extends MpagoTestCase
 		$this->assertSame('mpago', $module->rights_class);
 		$this->assertSame('Mpago', $module->name);
 		$this->assertSame('MAIN_MODULE_MPAGO', $module->const_name);
-		$this->assertSame(array('hooks' => array('newpayment')), $module->module_parts);
+		$this->assertSame(array('hooks' => array('newpayment', 'tiendacron')), $module->module_parts);
 		$this->assertCount(2, $module->cronjobs);
 		foreach ($module->cronjobs as $job) {
 			$this->assertSame('MpagoCron', $job['objectname'] ?? '');

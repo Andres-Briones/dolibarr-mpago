@@ -24,7 +24,9 @@
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonhookactions.class.php';
 require_once __DIR__.'/../lib/mpago.lib.php';
 require_once __DIR__.'/mpagoorder.class.php';
+require_once DOL_DOCUMENT_ROOT.'/commande/class/commande.class.php';
 require_once __DIR__.'/mpagocheckout.class.php';
+require_once __DIR__.'/mpagorecorder.class.php';
 
 /**
  * Hooks of the Mpago module on the public payment page (context newpayment).
@@ -251,6 +253,42 @@ class ActionsMpago extends CommonHookActions
 		$this->resprints = '<br><div class="opacitymedium" id="mpago_status">'.$message.'</div>';
 
 		return 1;
+	}
+
+	/**
+	 * Asked by the shop module (dolibarr-tienda, context "tiendacron") before it cancels an unpaid order:
+	 * answer 1 to keep the order when its payment was received or is still being processed.
+	 * The order is read again at Mercado Pago first, the notification may not have arrived yet.
+	 *
+	 * @param	array<string,mixed>	$parameters		Hook parameters: 'order' (Commande)
+	 * @param	CommonObject|null	$object			Order
+	 * @param	string|null			$action			Current action
+	 * @param	HookManager			$hookmanager	Hook manager
+	 * @return	int									1 to keep the order, 0 to let the shop decide
+	 */
+	public function tiendaKeepUnpaidOrder($parameters, &$object, &$action, $hookmanager)
+	{
+		$this->results = array();
+		$this->resprints = '';
+
+		$order = $parameters['order'] ?? null;
+		if (!($order instanceof Commande) || (int) $order->id <= 0) {
+			return 0;
+		}
+
+		$row = new MpagoOrder($this->db);
+		if ($row->fetchLastForSource(MpagoOrder::SOURCE_ORDER, (int) $order->id) <= 0) {
+			return 0;
+		}
+		if (!$row->isRecorded() && $row->mp_order_id !== '') {
+			$recorder = new MpagoRecorder($this->db);
+			$recorder->sync($row);
+		}
+		if ($row->isRecorded() || $row->isPaidAtMercadoPago()) {
+			return 1;
+		}
+
+		return (in_array($row->status, array(MpagoOrder::STATUS_PROCESSING, MpagoOrder::STATUS_ACTION_REQUIRED), true) ? 1 : 0);
 	}
 
 	/**

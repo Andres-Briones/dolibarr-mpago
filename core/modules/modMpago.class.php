@@ -56,7 +56,7 @@ class modMpago extends DolibarrModules
 		$this->picto = 'fa-credit-card';
 
 		$this->module_parts = array(
-			'hooks' => array('newpayment'),
+			'hooks' => array('newpayment', 'tiendacron'),
 		);
 		$this->dirs = array();
 		$this->config_page_url = array('setup.php@mpago');

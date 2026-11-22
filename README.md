@@ -91,6 +91,11 @@ Context `mpagoreturn`, method `getReturnLink`, parameters `source`
 `pending` or `failed`). Put the address in `$this->results['url']` and,
 optionally, the text of the link in `$this->results['label']`.
 
+The module also answers the hook `tiendaKeepUnpaidOrder` of
+the shop module `dolibarr-tienda` (context `tiendacron`): before the
+shop cancels an unpaid order, the order is read again at Mercado Pago and
+kept when it was paid or is still being processed.
+
 ## Testing with test cards
 
 With the **test access token** saved, open a payment link in a private

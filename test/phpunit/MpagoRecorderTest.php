@@ -221,6 +221,41 @@ class MpagoRecorderTest extends MpagoTestCase
 	}
 
 	/**
+	 * The shop asks before cancelling an unpaid order: kept when the money was received, even if no notification came.
+	 *
+	 * @return void
+	 */
+	public function testKeepUnpaidOrderHook(): void
+	{
+		/**
+		 * @var DoliDB $db
+		 * @var HookManager $hookmanager
+		 */
+		global $db, $hookmanager;
+
+		require_once dirname(__DIR__, 2).'/class/actions_mpago.class.php';
+		$actions = new ActionsMpago($db);
+		$action = '';
+
+		$never = $this->createOrder($this->createThirdparty(), 100);
+		$object = $never;
+		$this->assertSame(0, $actions->tiendaKeepUnpaidOrder(array('order' => $never), $object, $action, $hookmanager), 'never sent to Mercado Pago');
+
+		$unpaid = $this->createOrder($this->createThirdparty(), 100);
+		$this->startPayment('order', (string) $unpaid->ref);
+		$object = $unpaid;
+		$this->assertSame(0, $actions->tiendaKeepUnpaidOrder(array('order' => $unpaid), $object, $action, $hookmanager), 'checkout opened, not paid');
+
+		$paid = $this->createOrder($this->createThirdparty(), 100);
+		$row = $this->startPayment('order', (string) $paid->ref);
+		self::payAtFake($row->mp_order_id);
+		$object = $paid;
+		$this->assertSame(1, $actions->tiendaKeepUnpaidOrder(array('order' => $paid), $object, $action, $hookmanager), 'paid, no notification yet');
+		$paid->fetch((int) $paid->id);
+		$this->assertEquals(1, $paid->billed, 'the payment was recorded on the way');
+	}
+
+	/**
 	 * An order invoiced by hand while the buyer was paying: the payment goes to that invoice, no second invoice.
 	 *
 	 * @return void
