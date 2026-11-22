@@ -226,6 +226,12 @@ class MpagoRecorder
 					return 'Order '.$row->fk_source.' not found';
 				}
 
+				if ((int) $order->status == Commande::STATUS_CANCELED) {
+					// The money was received: it is recorded anyway, and the row is flagged so that somebody decides what to do with the order.
+					$row->last_error = trim('Paid although order '.$order->ref.' was cancelled: check stock and delivery, or refund. '.$row->last_error);
+					dol_syslog(__METHOD__.' order '.$row->mp_order_id.': '.$row->last_error, LOG_WARNING);
+				}
+
 				$openinvoiceid = $this->findOpenInvoiceOfOrder((int) $order->id);
 				if ($openinvoiceid > 0) {
 					// The order was invoiced by hand while the buyer was paying: pay that invoice instead of creating a second one

@@ -118,6 +118,11 @@ pay() {
 	check "[$source] no payment before paying" "$(helper status "$source" "$id" | value payments)" 0
 
 	curl -s -o /dev/null -X POST -d '{"pay":true}' "$FAKE/__test/orders/$order"
+	# Return page, webhook processing and polling can meet: eight simultaneous returns must record once.
+	pids=""
+	for _ in 1 2 3 4 5 6 7 8; do curl -s -o /dev/null "$returnurl" & pids="$pids $!"; done
+	# shellcheck disable=SC2086
+	wait $pids
 	# The query string Mercado Pago appends is ignored: it says "rejected" here.
 	check "[$source] return page answers" "$(curl -s -o "$WORK/return.html" -w '%{http_code}' "$returnurl&status=rejected&collection_status=rejected&order_id=OTHER")" 200
 	contains "[$source] return page says paid" "$WORK/return.html" 'class="mpago_paid'

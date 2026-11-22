@@ -116,11 +116,13 @@ class MpagoWebhookTest extends MpagoTestCase
 		$this->assertSame(401, $webhook->handle('ORDTSTWEBHOOK0000000000000000003', 'order', '', 'req-bad-2', $body));
 		$this->assertSame(401, $webhook->handle('ORDTSTWEBHOOK0000000000000000003', 'order', 'ts=1,v1=abc', 'req-bad-3', $body));
 
-		// Valid signature, but too old
+		// Valid signature, but older than the tolerance the administrator chose
+		mpagoSetConfInMemory('MPAGO_WEBHOOK_TOLERANCE', '600');
 		$ts = (string) ((time() - 3600) * 1000);
 		$stale = 'ts='.$ts.',v1='.hash_hmac('sha256', MpagoSignature::buildManifest('ordtstwebhook0000000000000000003', 'req-bad-4', $ts), self::WEBHOOK_SECRET);
 		$this->assertSame(401, $webhook->handle('ORDTSTWEBHOOK0000000000000000003', 'order', $stale, 'req-bad-4', $body));
-		mpagoSetConfInMemory('MPAGO_WEBHOOK_TOLERANCE', '7200');
+		// No tolerance set: any age is accepted, the signature covers the timestamp
+		mpagoSetConfInMemory('MPAGO_WEBHOOK_TOLERANCE', '');
 		$this->assertSame(200, $webhook->handle('ORDTSTWEBHOOK0000000000000000003', 'order', $stale, 'req-bad-4', $body));
 		$this->assertSame(1, $this->countRows("mpago_event WHERE mp_order_id = 'ORDTSTWEBHOOK0000000000000000003'"));
 

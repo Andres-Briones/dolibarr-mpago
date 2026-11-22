@@ -197,6 +197,30 @@ class MpagoRecorderTest extends MpagoTestCase
 	}
 
 	/**
+	 * Money received for an order cancelled meanwhile (a shop's unpaid-order timeout, for instance) is recorded and flagged.
+	 *
+	 * @return void
+	 */
+	public function testCancelledOrderIsRecordedAndFlagged(): void
+	{
+		/** @var DoliDB $db */
+		global $db;
+
+		$order = $this->createOrder($this->createThirdparty(), 300);
+		$row = $this->startPayment('order', (string) $order->ref);
+		self::payAtFake($row->mp_order_id);
+		$this->assertNotFalse($db->query("UPDATE ".MAIN_DB_PREFIX."commande SET fk_statut = ".Commande::STATUS_CANCELED." WHERE rowid = ".((int) $order->id)));
+
+		$recorder = new MpagoRecorder($db);
+		$this->assertSame(MpagoRecorder::RESULT_RECORDED, $recorder->sync($row), $recorder->error);
+		$this->assertSame(MpagoRecorder::RESULT_ALREADY_RECORDED, $recorder->sync($row));
+
+		$this->assertGreaterThan(0, $row->fk_paiement);
+		$this->assertSame(1, $this->countPayments($row->fk_facture));
+		$this->assertStringContainsString('cancelled', $row->last_error);
+	}
+
+	/**
 	 * An order invoiced by hand while the buyer was paying: the payment goes to that invoice, no second invoice.
 	 *
 	 * @return void

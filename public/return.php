@@ -98,6 +98,24 @@ if (!$found) {
 }
 
 
+// Lets the module that created the document (a shop, for instance) send the buyer back to its own page.
+$backurl = '';
+$backlabel = '';
+if ($found) {
+	/** @var HookManager $hookmanager */
+	$hookmanager->initHooks(array('mpagoreturn'));
+	$parameters = array('source' => $row->source, 'fk_source' => $row->fk_source, 'ref_source' => $row->ref_source, 'result' => $state);
+	$hookaction = '';
+	// A copy: the hook manager takes the object by reference and core types it loosely.
+	$hookobject = $row;
+	$reshook = $hookmanager->executeHooks('getReturnLink', $parameters, $hookobject, $hookaction);
+	if ($reshook >= 0 && !empty($hookmanager->resArray['url']) && is_string($hookmanager->resArray['url'])) {
+		$backurl = $hookmanager->resArray['url'];
+		$backlabel = (!empty($hookmanager->resArray['label']) && is_string($hookmanager->resArray['label']) ? $hookmanager->resArray['label'] : $langs->trans('MpagoReturnBack'));
+	}
+}
+
+
 /*
  * View
  */
@@ -129,6 +147,9 @@ if ($text !== '') {
 if ($retry) {
 	$url = getOnlinePaymentUrl(0, $row->source, $row->ref_source);
 	print '<br><div><a class="button" id="mpago_retry" href="'.dol_escape_htmltag($url).'">'.$langs->trans('MpagoReturnTryAgain').'</a></div>'."\n";
+}
+if ($backurl !== '') {
+	print '<br><div><a class="button" id="mpago_back" href="'.dol_escape_htmltag($backurl).'">'.dol_escape_htmltag($backlabel).'</a></div>'."\n";
 }
 print '<br>'."\n";
 

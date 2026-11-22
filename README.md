@@ -83,6 +83,14 @@ when the setup is complete.
 Payment links are the usual Dolibarr ones (invoice or order card, "Online
 payment" link, or the `__ONLINE_PAYMENT_URL__` substitution in e-mails).
 
+## For other modules
+
+The return page shows a link back to your own page when a hook answers.
+Context `mpagoreturn`, method `getReturnLink`, parameters `source`
+(`order` or `invoice`), `fk_source`, `ref_source` and `result` (`paid`,
+`pending` or `failed`). Put the address in `$this->results['url']` and,
+optionally, the text of the link in `$this->results['label']`.
+
 ## Testing with test cards
 
 With the **test access token** saved, open a payment link in a private
@@ -110,8 +118,13 @@ payments are still recorded by the return page and by the periodic check.
   payment link is ignored).
 - One item per payment ("company + document ref"), no itemised lines.
 - No e-mail is sent by the module; Mercado Pago notifies the buyer.
-- Notifications signed more than 10 minutes ago are refused (hidden
-  constant `MPAGO_WEBHOOK_TOLERANCE`, in seconds, `0` to accept any age).
+- Notifications are accepted whatever the age of their signed timestamp:
+  a replayed notification only makes the module read the order again, and
+  whether Mercado Pago re-signs its retries is not documented. The hidden
+  constant `MPAGO_WEBHOOK_TOLERANCE` (seconds) sets a limit.
+- A payment received for an order that was cancelled meanwhile is still
+  recorded (invoice, payment, bank line) and listed on the setup page
+  under the payments that need attention.
 - On Dolibarr 22, PHP raises a notice at each call to Mercado Pago
   (`CURLOPT_SSL_VERIFYHOST no longer accepts the value 1`): Dolibarr 22's
   `getURLContent()` passes a boolean there. The certificate is still

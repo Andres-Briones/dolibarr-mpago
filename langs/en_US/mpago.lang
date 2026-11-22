@@ -87,3 +87,4 @@ MpagoProblems = Payments that need attention
 MpagoOrderId = Mercado Pago order
 MpagoLastCheck = Last check
 MpagoRecorded = recorded
+MpagoReturnBack = Back to the shop

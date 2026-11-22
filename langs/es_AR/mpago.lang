@@ -87,3 +87,4 @@ MpagoProblems = Pagos que requieren atención
 MpagoOrderId = Orden de Mercado Pago
 MpagoLastCheck = Última revisión
 MpagoRecorded = registrado
+MpagoReturnBack = Volver a la tienda

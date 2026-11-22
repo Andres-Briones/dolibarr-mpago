@@ -26,7 +26,11 @@
  */
 class MpagoSignature
 {
-	const DEFAULT_TOLERANCE = 600;
+	/**
+	 * No age limit by default: the timestamp is covered by the signature, a replayed notification only makes us
+	 * read the order again, and whether Mercado Pago re-signs its retries (up to 96 hours later) is not documented.
+	 */
+	const DEFAULT_TOLERANCE = 0;
 
 	/**
 	 * @var string Reason of the last refusal: 'no_secret', 'bad_header', 'stale' or 'mismatch'
