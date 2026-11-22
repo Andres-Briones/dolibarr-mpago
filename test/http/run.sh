@@ -34,6 +34,13 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# shot <name> <url>: phone-size screenshot into $SHOTS, when that directory is given
+shot() {
+	[ -n "${SHOTS:-}" ] || return 0
+	mkdir -p "$SHOTS"
+	chromium --headless=new --no-sandbox --disable-gpu --hide-scrollbars --window-size=390,844 --screenshot="$SHOTS/$1.png" "$2" >/dev/null 2>&1 || true
+}
+
 ok() { CHECKS=$((CHECKS + 1)); printf 'ok   %s\n' "$1"; }
 fail() { printf 'FAIL %s\n' "$1" >&2; exit 1; }
 # check <description> <actual> <expected>
@@ -92,6 +99,7 @@ pay() {
 
 	check "[$source] payment page answers" "$(curl -s -c "$WORK/buyer" -o "$WORK/pay.html" -w '%{http_code}' "$url")" 200
 	contains "[$source] payment page shows the Mercado Pago button" "$WORK/pay.html" 'name="dopayment_mpago"'
+	shot "pay-$source" "$url"
 
 	# Post the form back as a browser would: every hidden field plus the button.
 	php -r '$h = (string) file_get_contents($argv[1]); preg_match_all("/<input[^>]*type=\"hidden\"[^>]*>/", $h, $m); $f = array();
@@ -126,6 +134,7 @@ pay() {
 	# The query string Mercado Pago appends is ignored: it says "rejected" here.
 	check "[$source] return page answers" "$(curl -s -o "$WORK/return.html" -w '%{http_code}' "$returnurl&status=rejected&collection_status=rejected&order_id=OTHER")" 200
 	contains "[$source] return page says paid" "$WORK/return.html" 'class="mpago_paid'
+	shot "return-$source" "$returnurl"
 
 	helper status "$source" "$id" > "$WORK/status"
 	[ "$source" != order ] || check "[order] order classified billed" "$(value billed < "$WORK/status")" 1

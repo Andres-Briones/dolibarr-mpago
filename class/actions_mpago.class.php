@@ -146,7 +146,7 @@ class ActionsMpago extends CommonHookActions
 			$out .= '<input type="email" class="flat minwidth200" id="mpago_email" name="mpago_email" maxlength="255" value="'.dol_escape_htmltag(mpagoString(GETPOST('mpago_email', 'alphanohtml'))).'">';
 			$out .= '</div>';
 		}
-		$out .= '<div class="button buttonpayment" id="div_dopayment_mpago">';
+		$out .= '<div class="button buttonpayment" id="div_dopayment_mpago" style="background-color: #0b5fa5;">';
 		$out .= '<span class="fa fa-credit-card"></span> ';
 		$out .= '<input class="" type="submit" id="dopayment_mpago" name="dopayment_mpago" value="'.dol_escape_htmltag($langs->trans('MpagoDoPayment')).'">';
 		$out .= '<br>';

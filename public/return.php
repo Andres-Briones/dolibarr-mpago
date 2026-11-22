@@ -137,7 +137,9 @@ llxHeader($head, $langs->trans('PaymentForm'), '', '', 0, 0, '', '', '', 'online
 print '<span id="dolpaymentspan"></span>'."\n";
 print '<div id="dolpaymentdiv" class="center">'."\n";
 
-htmlPrintOnlineHeader($mysoc, $langs, 1, getDolGlobalString('ONLINE_PAYMENT_CREDITOR', (string) $mysoc->name), '', 'ONLINE_PAYMENT_LOGO');
+// As on core's payment page: the company logo if there is one, else its name, never the Dolibarr logo.
+$haslogo = (!empty($mysoc->logo_small) || !empty($mysoc->logo) || getDolGlobalString('ONLINE_PAYMENT_LOGO') !== '');
+htmlPrintOnlineHeader($mysoc, $langs, ($haslogo ? 1 : 0), getDolGlobalString('ONLINE_PAYMENT_CREDITOR', (string) $mysoc->name), '', 'ONLINE_PAYMENT_LOGO');
 
 print '<br><br>'."\n";
 print '<div id="mpago_result" class="mpago_'.$state.' '.($state == 'paid' ? 'amountpaymentcomplete' : 'warning').' size12x wrapimp">'.dol_escape_htmltag($title).'</div>'."\n";

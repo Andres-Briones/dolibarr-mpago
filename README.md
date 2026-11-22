@@ -129,7 +129,9 @@ payments are still recorded by the return page and by the periodic check.
   constant `MPAGO_WEBHOOK_TOLERANCE` (seconds) sets a limit.
 - A payment received for an order that was cancelled meanwhile is still
   recorded (invoice, payment, bank line) and listed on the setup page
-  under the payments that need attention.
+  under the payments that need attention. The cancelled order itself is
+  left as it is (not classified billed): somebody has to decide between
+  delivering and refunding.
 - On Dolibarr 22, PHP raises a notice at each call to Mercado Pago
   (`CURLOPT_SSL_VERIFYHOST no longer accepts the value 1`): Dolibarr 22's
   `getURLContent()` passes a boolean there. The certificate is still
