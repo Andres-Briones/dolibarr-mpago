@@ -22,6 +22,9 @@
  */
 
 $mpagoloaded = 0;
+if (!empty($_SERVER['CONTEXT_DOCUMENT_ROOT']) && is_string($_SERVER['CONTEXT_DOCUMENT_ROOT']) && is_file(str_replace('..', '', $_SERVER['CONTEXT_DOCUMENT_ROOT']).'/main.inc.php')) {
+	$mpagoloaded = include str_replace('..', '', $_SERVER['CONTEXT_DOCUMENT_ROOT']).'/main.inc.php';
+}
 // The module directory may be a symbolic link below htdocs/custom: start from the script as the web server sees it.
 $mpagoscript = (isset($_SERVER['SCRIPT_FILENAME']) && is_string($_SERVER['SCRIPT_FILENAME']) ? $_SERVER['SCRIPT_FILENAME'] : '');
 $mpagodir = dirname($mpagoscript);
