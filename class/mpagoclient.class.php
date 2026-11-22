@@ -162,6 +162,10 @@ class MpagoClient
 		// Local addresses are refused unless the base URL was overridden on purpose (tests against a fake API).
 		$localurl = ($this->baseUrl === self::DEFAULT_BASE_URL ? 0 : 2);
 
+		// The certificate is always checked, even where Dolibarr would not (instances that are not in production mode).
+		// Asked only for https: Dolibarr 22 passes a boolean to CURLOPT_SSL_VERIFYHOST, which makes PHP raise a notice.
+		$sslverify = (strpos($this->baseUrl, 'https://') === 0 ? 1 : 0);
+
 		// getURLContent() writes the request headers, Authorization included, to the Dolibarr log at
 		// LOG_INFO (and to the curl debug log at LOG_DEBUG): keep the log below that level during the call.
 		$previouslevel = getDolGlobalInt('SYSLOG_LEVEL');
@@ -169,7 +173,7 @@ class MpagoClient
 			mpagoSetConfInMemory('SYSLOG_LEVEL', (string) LOG_NOTICE);
 		}
 		try {
-			$result = getURLContent($this->baseUrl.$path, $method, $payload, 0, $headers, array('http', 'https'), $localurl, 1);
+			$result = getURLContent($this->baseUrl.$path, $method, $payload, 0, $headers, array('http', 'https'), $localurl, $sslverify);
 		} finally {
 			if ($previouslevel >= LOG_INFO) {
 				mpagoSetConfInMemory('SYSLOG_LEVEL', (string) $previouslevel);
