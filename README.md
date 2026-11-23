@@ -67,8 +67,11 @@ online with Mercado Pago **Checkout Pro** (Orders API), in Argentine pesos.
   the stored values.
 - **Bank account**: the Dolibarr account that represents your Mercado Pago
   balance. Payments are booked there.
-- **Payment mode**: payment mode written on the payments (credit card by
-  default).
+- **Payment mode**: payment mode written on the payments. By default the
+  "Mercado Pago" mode (code `MPAGO`, customer payments) that enabling the
+  module creates in the payment modes dictionary when the entity has none;
+  it stays when the module is disabled. If an admin disables or deletes it,
+  credit card (`CB`) is used.
 - **User for automatic actions**: invoices are validated and payments
   recorded in the name of this user; it needs the permissions to create
   and validate invoices and to record payments and bank lines.

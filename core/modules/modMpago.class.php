@@ -32,6 +32,11 @@ include_once DOL_DOCUMENT_ROOT.'/core/modules/DolibarrModules.class.php';
 class modMpago extends DolibarrModules
 {
 	/**
+	 * Code of the payment mode the module creates in the payment modes dictionary
+	 */
+	const PAYMENT_MODE_CODE = 'MPAGO';
+
+	/**
 	 * Constructor. Define names, constants, directories, boxes, permissions
 	 *
 	 * @param DoliDB $db Database handler
@@ -106,7 +111,8 @@ class modMpago extends DolibarrModules
 	}
 
 	/**
-	 * Function called when module is enabled: creates the tables, then the constants and scheduled jobs.
+	 * Function called when module is enabled: creates the tables, then the constants, scheduled jobs
+	 * and the Mercado Pago payment mode of the current entity.
 	 *
 	 * @param	string		$options	Options when enabling module ('', 'noboxes')
 	 * @return	int<-1,1>				1 if OK, <=0 if KO
@@ -118,8 +124,38 @@ class modMpago extends DolibarrModules
 			return -1;
 		}
 
-		$result = $this->_init(array(), $options);
+		$sql = array();
+		if (!$this->hasPaymentMode()) {
+			// Type 0: customer payments only. The unique key (entity, code) protects a concurrent activation.
+			$sql[] = array(
+				'sql' => "INSERT INTO ".$this->db->prefix()."c_paiement (entity, code, libelle, type, active, module, position) VALUES (__ENTITY__, '".self::PAYMENT_MODE_CODE."', 'Mercado Pago', 0, 1, 'mpago', 0)",
+				'ignoreerror' => 1,
+			);
+		}
+
+		$result = $this->_init($sql, $options);
 
 		return ($result > 0 ? 1 : ($result < 0 ? -1 : 0));
+	}
+
+	/**
+	 * Tell whether the current entity has a payment mode with the code of the module, in any state:
+	 * a row an admin disabled or relabelled is left as it is.
+	 *
+	 * @return	bool	True if the row exists, false if not or if the check failed
+	 */
+	private function hasPaymentMode()
+	{
+		/** @var Conf $conf */
+		global $conf;
+
+		$resql = $this->db->query("SELECT id FROM ".$this->db->prefix()."c_paiement WHERE code = '".self::PAYMENT_MODE_CODE."' AND entity = ".((int) $conf->entity));
+		if (is_bool($resql)) {
+			return false;
+		}
+		$found = ($this->db->num_rows($resql) > 0);
+		$this->db->free($resql);
+
+		return $found;
 	}
 }

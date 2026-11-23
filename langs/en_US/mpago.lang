@@ -5,6 +5,10 @@ ModuleMpagoName = Mercado Pago
 # Module description 'ModuleMpagoDesc'
 ModuleMpagoDesc = Online payment of invoices and orders with Mercado Pago Checkout Pro (Argentina)
 
+# Payment mode the module creates, translated by core as 'PaymentType' and 'PaymentTypeShort' followed by its code
+PaymentTypeMPAGO = Mercado Pago
+PaymentTypeShortMPAGO = Mercado Pago
+
 # Scheduled jobs
 MpagoCronProcessEvents = Mercado Pago: process notifications
 MpagoCronProcessEventsDesc = Reads the notifications received from Mercado Pago and records the payments they announce.

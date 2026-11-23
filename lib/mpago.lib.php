@@ -139,17 +139,31 @@ function mpagoSetSecretConst($db, $name, $value, $entity)
 }
 
 /**
- * Id of the payment mode used for the payments recorded by the module.
+ * Id of the payment mode used for the payments recorded by the module: the one chosen in the setup,
+ * else the active Mercado Pago mode of the entity, else credit card.
  *
  * @param	DoliDB	$db		Database handler
  * @return	int				Id in the payment modes dictionary, 0 if none can be found
  */
 function mpagoGetPaymentModeId($db)
 {
+	/** @var Conf $conf */
+	global $conf;
+
 	$id = getDolGlobalInt('MPAGO_PAYMENT_MODE');
 	if ($id > 0) {
 		return $id;
 	}
+
+	// Created when the module is enabled; an admin may have disabled or removed it
+	$lines = mpagoFetchAll($db, "SELECT id FROM ".$db->prefix()."c_paiement WHERE code = 'MPAGO' AND entity = ".((int) $conf->entity)." AND active = 1");
+	if (!empty($lines)) {
+		$id = mpagoInt($lines[0]['id']);
+		if ($id > 0) {
+			return $id;
+		}
+	}
+
 	return max(0, mpagoInt(dol_getIdFromCode($db, 'CB', 'c_paiement', 'code', 'id', 1)));
 }
 

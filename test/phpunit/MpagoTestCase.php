@@ -110,9 +110,24 @@ abstract class MpagoTestCase extends PHPUnit\Framework\TestCase
 	protected static $bankAccountId = 0;
 
 	/**
+	 * Columns of the payment modes dictionary, the same on Dolibarr 22 to 24
+	 */
+	const PAYMENT_MODE_COLUMNS = array('id', 'entity', 'code', 'libelle', 'type', 'active', 'accountancy_code', 'module', 'position');
+
+	/**
 	 * @var array<string,string> Setup values in memory before the test
 	 */
 	private $savedConf = array();
+
+	/**
+	 * @var array<int,array<string,string|null>> Payment modes of the entity with the module's code before the test, by id
+	 */
+	private $savedPaymentModes = array();
+
+	/**
+	 * @var int[] Ids of the payment modes the test created
+	 */
+	private $createdPaymentModes = array();
 
 	/**
 	 * Global test setup
@@ -168,6 +183,9 @@ abstract class MpagoTestCase extends PHPUnit\Framework\TestCase
 	 */
 	protected function setUp(): void
 	{
+		$this->savedPaymentModes = $this->paymentModeRows();
+		$this->createdPaymentModes = array();
+
 		$this->savedConf = array();
 		foreach (self::CONF_NAMES as $name) {
 			$this->savedConf[$name] = getDolGlobalString($name);
@@ -198,6 +216,138 @@ abstract class MpagoTestCase extends PHPUnit\Framework\TestCase
 	{
 		foreach ($this->savedConf as $name => $value) {
 			mpagoSetConfInMemory($name, $value);
+		}
+		$this->restorePaymentModes();
+	}
+
+	/**
+	 * Payment modes of the current entity with the module's code, all columns, by id.
+	 *
+	 * @return	array<int,array<string,string|null>>
+	 */
+	protected function paymentModeRows()
+	{
+		/**
+		 * @var Conf $conf
+		 * @var DoliDB $db
+		 */
+		global $conf, $db;
+
+		$lines = mpagoFetchAll($db, "SELECT ".implode(', ', self::PAYMENT_MODE_COLUMNS)." FROM ".MAIN_DB_PREFIX."c_paiement WHERE code = '".modMpago::PAYMENT_MODE_CODE."' AND entity = ".((int) $conf->entity)." ORDER BY id");
+		$this->assertNotNull($lines);
+		$rows = array();
+		foreach ($lines as $line) {
+			$row = array();
+			foreach (self::PAYMENT_MODE_COLUMNS as $column) {
+				$row[$column] = (isset($line[$column]) ? mpagoString($line[$column]) : null);
+			}
+			$rows[mpagoInt($line['id'])] = $row;
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * Remember a payment mode the test created, so that it is deleted when the test ends.
+	 *
+	 * @param	int		$id		Id of the row
+	 * @return	void
+	 */
+	protected function recordCreatedPaymentMode($id)
+	{
+		$this->assertGreaterThan(0, $id);
+		$this->assertArrayNotHasKey($id, $this->savedPaymentModes, 'Row '.$id.' was there before the test');
+		$this->createdPaymentModes[] = (int) $id;
+	}
+
+	/**
+	 * Give the entity a payment mode with the module's code for the test: the row it already has,
+	 * changed (and put back when the test ends), or a new row.
+	 *
+	 * @param	int		$active		Value of the active column
+	 * @param	string	$label		Label
+	 * @return	int					Id of the row
+	 */
+	protected function givePaymentMode($active = 1, $label = 'Mercado Pago')
+	{
+		/**
+		 * @var Conf $conf
+		 * @var DoliDB $db
+		 */
+		global $conf, $db;
+
+		foreach (array_keys($this->savedPaymentModes) as $id) {
+			$this->assertNotFalse($db->query("UPDATE ".MAIN_DB_PREFIX."c_paiement SET code = '".modMpago::PAYMENT_MODE_CODE."', active = ".((int) $active).", libelle = '".$db->escape($label)."' WHERE id = ".((int) $id)), $db->lasterror());
+			return $id;
+		}
+
+		$sql = "INSERT INTO ".MAIN_DB_PREFIX."c_paiement (entity, code, libelle, type, active, module, position)";
+		$sql .= " VALUES (".((int) $conf->entity).", '".modMpago::PAYMENT_MODE_CODE."', '".$db->escape($label)."', 0, ".((int) $active).", 'mpago', 0)";
+		$this->assertNotFalse($db->query($sql), $db->lasterror());
+		$id = (int) $db->last_insert_id(MAIN_DB_PREFIX.'c_paiement', 'id');
+		$this->recordCreatedPaymentMode($id);
+
+		return $id;
+	}
+
+	/**
+	 * Make the payment mode with the module's code disappear for the test: the row the entity has
+	 * gets another code until the test ends.
+	 *
+	 * @return	void
+	 */
+	protected function hidePaymentMode()
+	{
+		/** @var DoliDB $db */
+		global $db;
+
+		foreach (array_keys($this->savedPaymentModes) as $id) {
+			$this->assertNotFalse($db->query("UPDATE ".MAIN_DB_PREFIX."c_paiement SET code = 'MPGTST' WHERE id = ".((int) $id)), $db->lasterror());
+		}
+		$this->assertSame(array(), $this->paymentModeRows());
+	}
+
+	/**
+	 * Put the payment modes with the module's code back as they were before the test: delete the rows
+	 * the test recorded as created, when they still are the module's and no payment uses them
+	 * (a payment of the test goes away with the rollback, and the row with it), and give the rows
+	 * that were there their columns back.
+	 *
+	 * @return	void
+	 */
+	private function restorePaymentModes()
+	{
+		/**
+		 * @var Conf $conf
+		 * @var DoliDB $db
+		 */
+		global $conf, $db;
+
+		$owned = " code = '".modMpago::PAYMENT_MODE_CODE."' AND entity = ".((int) $conf->entity)." AND module = 'mpago'";
+		foreach ($this->createdPaymentModes as $id) {
+			if (isset($this->savedPaymentModes[$id])) {
+				continue;
+			}
+			if ($this->countRows("c_paiement WHERE id = ".((int) $id)." AND".$owned) == 1 && $this->countRows("paiement WHERE fk_paiement = ".((int) $id)) == 0) {
+				$db->query("DELETE FROM ".MAIN_DB_PREFIX."c_paiement WHERE id = ".((int) $id)." AND".$owned);
+			}
+		}
+		$this->createdPaymentModes = array();
+
+		foreach ($this->savedPaymentModes as $id => $row) {
+			$values = array();
+			foreach ($row as $value) {
+				$values[] = ($value === null ? 'NULL' : "'".$db->escape($value)."'");
+			}
+			if ($this->countRows("c_paiement WHERE id = ".((int) $id)) == 1) {
+				$sets = array();
+				foreach (array_keys($row) as $i => $column) {
+					$sets[] = $column." = ".$values[$i];
+				}
+				$db->query("UPDATE ".MAIN_DB_PREFIX."c_paiement SET ".implode(', ', $sets)." WHERE id = ".((int) $id));
+			} else {
+				$db->query("INSERT INTO ".MAIN_DB_PREFIX."c_paiement (".implode(', ', array_keys($row)).") VALUES (".implode(', ', $values).")");
+			}
 		}
 	}
 

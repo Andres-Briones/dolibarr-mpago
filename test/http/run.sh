@@ -2,7 +2,8 @@
 # HTTP-level checks of the Mpago module against a running development instance and the fake
 # Mercado Pago API (test/fake/router.php). Separate from PHPUnit: it goes through the web server,
 # commits to the instance database and leaves behind the documents it creates (a bank account
-# MPAGO-TEST, two third parties, two invoices, one order, two payments).
+# MPAGO-TEST, two third parties, two invoices, one order, two payments). Enabling the module
+# runs its init() even when it is already enabled, which creates the MPAGO payment mode if missing.
 #
 # Usage: test/http/run.sh            (instance of dev/env.sh, by default http://127.0.0.1:8080)
 # Must run where the web server of the instance is reachable. Exits non-zero on the first failed check.
@@ -66,6 +67,9 @@ helper const MPAGO_API_BASE_URL "$FAKE"
 helper const MPAGO_ACCESS_TOKEN
 helper const MPAGO_WEBHOOK_SECRET
 ok "module enabled, bank account id $ACCOUNT, MPAGO_API_BASE_URL=$FAKE"
+read -r PAYMENT_MODE PAYMENT_MODE_ACTIVE < <(helper paymentmode)
+[ "$PAYMENT_MODE" -gt 0 ] || fail "no MPAGO payment mode after enabling the module"
+check "MPAGO payment mode (id $PAYMENT_MODE) active" "$PAYMENT_MODE_ACTIVE" 1
 
 formtoken() { grep -o 'name="token" value="[^"]*"' "$1" | head -1 | sed 's/.*value="//; s/"$//'; }
 
@@ -84,6 +88,7 @@ curl -s -b "$JAR" -c "$JAR" -o "$WORK/setup.html" "$SETUP"
 lacks "setup page reports a complete setup" "$WORK/setup.html" 'id="mpago_config_errors"'
 lacks "setup page does not print the access token" "$WORK/setup.html" "$TOKEN"
 lacks "setup page does not print the webhook secret" "$WORK/setup.html" "$SECRET"
+contains "setup page preselects the MPAGO payment mode" "$WORK/setup.html" "<option value=\"$PAYMENT_MODE\" data-code=\"MPAGO\" selected"
 check "access token stored" "$(helper secret MPAGO_ACCESS_TOKEN)" encrypted
 check "webhook secret stored" "$(helper secret MPAGO_WEBHOOK_SECRET)" encrypted
 
@@ -146,6 +151,7 @@ pay() {
 	check "[$source] payment carries the Mercado Pago order id" "$(value payment_ext_id < "$WORK/status")" "$order"
 	check "[$source] payment site" "$(value payment_site < "$WORK/status")" mercadopago
 	check "[$source] bank line on the configured account" "$(value payment_account < "$WORK/status")" "$ACCOUNT"
+	check "[$source] payment type" "$(value payment_type < "$WORK/status")" MPAGO
 
 	curl -s -o "$WORK/return.html" "$returnurl"
 	contains "[$source] return page reloaded still says paid" "$WORK/return.html" 'class="mpago_paid'

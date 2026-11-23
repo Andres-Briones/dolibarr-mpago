@@ -30,7 +30,7 @@ require_once __DIR__.'/MpagoTestCase.php';
 class MpagoRecorderTest extends MpagoTestCase
 {
 	/**
-	 * An invoice paid at Mercado Pago gets one payment and one bank line, and is closed.
+	 * An invoice paid at Mercado Pago gets one payment of the Mercado Pago type and one bank line, and is closed.
 	 *
 	 * @return void
 	 */
@@ -39,6 +39,7 @@ class MpagoRecorderTest extends MpagoTestCase
 		/** @var DoliDB $db */
 		global $db;
 
+		$paymentmodeid = $this->givePaymentMode();
 		$invoice = $this->createInvoice($this->createThirdparty(), 250.5);
 		$row = $this->startPayment('invoice', (string) $invoice->ref);
 		$banklines = $this->countBankLines();
@@ -69,8 +70,8 @@ class MpagoRecorderTest extends MpagoTestCase
 		$this->assertSame($row->mp_order_id, $payment->ext_payment_id);
 		$this->assertSame('mercadopago', $payment->ext_payment_site);
 		$this->assertStringStartsWith('PAY01', (string) $payment->num_payment);
-		$this->assertSame(1, $this->countRows("paiement WHERE rowid = ".((int) $row->fk_paiement)." AND fk_paiement = ".mpagoGetPaymentModeId($db)));
-		$this->assertSame('CB', $payment->type_code);
+		$this->assertSame(1, $this->countRows("paiement WHERE rowid = ".((int) $row->fk_paiement)." AND fk_paiement = ".$paymentmodeid));
+		$this->assertSame('MPAGO', $payment->type_code);
 		$this->assertGreaterThan(0, (int) $payment->bank_line);
 		$this->assertSame(1, $this->countRows("bank WHERE rowid = ".((int) $payment->bank_line)." AND fk_account = ".((int) self::$bankAccountId)." AND amount = 250.5"));
 		$this->assertSame(1, $this->countRows("paiement WHERE rowid = ".((int) $row->fk_paiement)." AND note LIKE '%visa credit_card%3x%'"));

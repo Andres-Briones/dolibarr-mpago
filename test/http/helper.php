@@ -95,7 +95,8 @@ $first = mpagoString($arguments[2] ?? '');
 $second = mpagoString($arguments[3] ?? '');
 
 if ($command === 'enable') {
-	$result = activateModule('modMpago');
+	// Even when already enabled: init() creates what a newer version of the module needs (payment mode)
+	$result = activateModule('modMpago', 1, 1);
 	if (!empty($result['errors'])) {
 		mpagoHelperFail('Module not enabled: '.implode(', ', $result['errors']));
 	}
@@ -181,17 +182,21 @@ if ($command === 'enable') {
 		print 'remain='.mpagoFormatAmount($invoice->getRemainToPay())."\n";
 		print 'payments='.mpagoHelperCount($db, "paiement_facture WHERE fk_facture = ".$invoiceid)."\n";
 		print 'banklines='.mpagoHelperCount($db, "bank_url as bu INNER JOIN ".MAIN_DB_PREFIX."paiement_facture as pf ON pf.fk_paiement = bu.url_id WHERE bu.type = 'payment' AND pf.fk_facture = ".$invoiceid)."\n";
-		$lines = mpagoFetchAll($db, "SELECT p.amount, p.ext_payment_id, p.ext_payment_site, p.num_paiement, b.fk_account FROM ".MAIN_DB_PREFIX."paiement as p INNER JOIN ".MAIN_DB_PREFIX."paiement_facture as pf ON pf.fk_paiement = p.rowid LEFT JOIN ".MAIN_DB_PREFIX."bank as b ON b.rowid = p.fk_bank WHERE pf.fk_facture = ".$invoiceid);
+		$lines = mpagoFetchAll($db, "SELECT p.amount, p.ext_payment_id, p.ext_payment_site, p.num_paiement, b.fk_account, cp.code as payment_type FROM ".MAIN_DB_PREFIX."paiement as p INNER JOIN ".MAIN_DB_PREFIX."paiement_facture as pf ON pf.fk_paiement = p.rowid LEFT JOIN ".MAIN_DB_PREFIX."bank as b ON b.rowid = p.fk_bank LEFT JOIN ".MAIN_DB_PREFIX."c_paiement as cp ON cp.id = p.fk_paiement WHERE pf.fk_facture = ".$invoiceid);
 		foreach ((array) $lines as $line) {
 			print 'payment_amount='.mpagoFormatAmount(mpagoFloat($line['amount']))."\n";
 			print 'payment_ext_id='.mpagoString($line['ext_payment_id'])."\n";
 			print 'payment_site='.mpagoString($line['ext_payment_site'])."\n";
 			print 'payment_num='.mpagoString($line['num_paiement'])."\n";
 			print 'payment_account='.mpagoString($line['fk_account'])."\n";
+			print 'payment_type='.mpagoString($line['payment_type'])."\n";
 		}
 	} else {
 		print "invoice=\npayments=0\nbanklines=0\n";
 	}
+} elseif ($command === 'paymentmode') {
+	$lines = mpagoFetchAll($db, "SELECT id, active FROM ".MAIN_DB_PREFIX."c_paiement WHERE code = 'MPAGO' AND entity = ".((int) $conf->entity));
+	print (isset($lines[0]) ? mpagoInt($lines[0]['id']).' '.mpagoInt($lines[0]['active']) : '0 0')."\n";
 } elseif ($command === 'events') {
 	print mpagoHelperCount($db, "mpago_event WHERE mp_order_id = '".$db->escape($first)."'").' '.mpagoHelperCount($db, "mpago_event WHERE status = 0 AND mp_order_id = '".$db->escape($first)."'")."\n";
 } elseif ($command === 'cron') {

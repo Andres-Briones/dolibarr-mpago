@@ -52,6 +52,33 @@ class MpagoModuleTest extends MpagoTestCase
 	}
 
 	/**
+	 * @var array<int,array<string,string|null>> Payment modes with the module's code before the test
+	 */
+	private $paymentModesBefore = array();
+
+	/**
+	 * Remember the payment modes the instance has.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void
+	{
+		$this->paymentModesBefore = $this->paymentModeRows();
+		parent::setUp();
+	}
+
+	/**
+	 * Check that the payment modes are back as they were: this class runs outside a transaction.
+	 *
+	 * @return void
+	 */
+	protected function tearDown(): void
+	{
+		parent::tearDown();
+		$this->assertSame($this->paymentModesBefore, $this->paymentModeRows(), 'The payment modes dictionary must be left as it was found');
+	}
+
+	/**
 	 * Tell whether the module is enabled in the database.
 	 *
 	 * @return	bool
@@ -87,8 +114,8 @@ class MpagoModuleTest extends MpagoTestCase
 	}
 
 	/**
-	 * Enabling the module creates its tables, constant, hook and scheduled jobs; disabling it removes them
-	 * and keeps the tables. The instance ends in the state it was found in.
+	 * Enabling the module creates its tables, constant, hook, scheduled jobs and payment mode; disabling it
+	 * removes the constant and hook and keeps the tables and the payment mode. The instance ends in the state it was found in.
 	 *
 	 * @return void
 	 */
@@ -103,10 +130,23 @@ class MpagoModuleTest extends MpagoTestCase
 		$entity = (int) $conf->entity;
 		$wasenabled = $this->isEnabled();
 		$hadjobs = ($this->countRows("cronjob WHERE module_name = 'mpago' AND entity = ".$entity) > 0);
+		$paymentmodes = $this->paymentModeRows();
 		$module = new modMpago($db);
 
 		try {
 			$this->assertSame(1, $module->init());
+
+			$this->assertSame(1, $this->countRows("c_paiement WHERE code = 'MPAGO' AND entity = ".$entity));
+			$rows = $this->paymentModeRows();
+			$this->assertCount(1, $rows);
+			$row = (array) reset($rows);
+			$paymentmodeid = mpagoInt($row['id']);
+			if (empty($paymentmodes)) {
+				$this->recordCreatedPaymentMode($paymentmodeid);
+				$this->assertSame(array('entity' => (string) $entity, 'code' => 'MPAGO', 'libelle' => 'Mercado Pago', 'type' => '0', 'active' => '1', 'accountancy_code' => null, 'module' => 'mpago', 'position' => '0'), array_slice($row, 1));
+			} else {
+				$this->assertSame($paymentmodes, $rows, 'The payment mode the entity had is left as it is');
+			}
 
 			$this->assertSame('1', dolibarr_get_const($db, 'MAIN_MODULE_MPAGO', $entity));
 			$this->assertSame(1, $this->countRows("const WHERE name = 'MAIN_MODULE_MPAGO_HOOKS' AND entity = ".$entity));
@@ -137,26 +177,89 @@ class MpagoModuleTest extends MpagoTestCase
 			// Enabling twice changes nothing
 			$this->assertSame(1, $module->init());
 			$this->assertSame(2, $this->countRows("cronjob WHERE module_name = 'mpago' AND entity = ".$entity));
+			$this->assertSame($rows, $this->paymentModeRows());
 
-			if (!$wasenabled) {
-				$this->assertSame(1, $module->remove());
-				$this->assertSame('', dolibarr_get_const($db, 'MAIN_MODULE_MPAGO', $entity));
-				// Core keeps the jobs that carry a test on the module (DolibarrModules::delete_cronjobs): they do not run while it is disabled
-				$this->assertSame(2, $this->countRows("cronjob WHERE module_name = 'mpago' AND test = 'isModEnabled(\"mpago\")' AND entity = ".$entity));
-				$this->assertSame(0, $this->countRows("const WHERE name LIKE 'MAIN_MODULE_MPAGO%' AND entity = ".$entity));
-				$this->assertSame(0, $this->countRows("mpago_order WHERE 1 = 0"), 'Disabling keeps the tables');
-			}
+			// Disabled even when it was enabled before the test, which enables it again
+			$this->assertSame(1, $module->remove());
+			$this->assertSame('', dolibarr_get_const($db, 'MAIN_MODULE_MPAGO', $entity));
+			// Core keeps the jobs that carry a test on the module (DolibarrModules::delete_cronjobs): they do not run while it is disabled
+			$this->assertSame(2, $this->countRows("cronjob WHERE module_name = 'mpago' AND test = 'isModEnabled(\"mpago\")' AND entity = ".$entity));
+			$this->assertSame(0, $this->countRows("const WHERE name LIKE 'MAIN_MODULE_MPAGO%' AND entity = ".$entity));
+			$this->assertSame(0, $this->countRows("mpago_order WHERE 1 = 0"), 'Disabling keeps the tables');
+			// Payments may use it: disabling the module keeps the payment mode
+			$this->assertSame($rows, $this->paymentModeRows());
 		} finally {
-			if (!$wasenabled && $this->isEnabled()) {
-				$module->remove();
-			}
-			if (!$wasenabled && !$hadjobs) {
-				$db->query("DELETE FROM ".MAIN_DB_PREFIX."cronjob WHERE module_name = 'mpago' AND entity = ".$entity);
-			}
+			$this->restoreModule($module, $wasenabled, $hadjobs);
 		}
 
 		$this->assertSame($wasenabled, $this->isEnabled());
 		$this->assertSame($hadjobs, $this->countRows("cronjob WHERE module_name = 'mpago' AND entity = ".$entity) > 0);
+	}
+
+	/**
+	 * Enabling the module leaves the payment mode with its code alone when the entity has one,
+	 * even disabled and relabelled by an admin.
+	 *
+	 * @return void
+	 */
+	public function testInitKeepsExistingPaymentMode(): void
+	{
+		/**
+		 * @var Conf $conf
+		 * @var DoliDB $db
+		 */
+		global $conf, $db;
+
+		$entity = (int) $conf->entity;
+		$wasenabled = $this->isEnabled();
+		$hadjobs = ($this->countRows("cronjob WHERE module_name = 'mpago' AND entity = ".$entity) > 0);
+		$module = new modMpago($db);
+
+		try {
+			$id = $this->givePaymentMode(0, 'MP (relabelled)');
+			$this->assertNotFalse($db->query("UPDATE ".MAIN_DB_PREFIX."c_paiement SET type = 2, position = 7 WHERE id = ".$id));
+			$before = $this->paymentModeRows();
+
+			foreach (array(1, 2) as $run) {
+				$this->assertSame(1, $module->init(), 'Activation '.$run);
+			}
+
+			$this->assertSame($before, $this->paymentModeRows());
+			$this->assertSame('MP (relabelled)', $before[$id]['libelle']);
+			$this->assertSame('0', $before[$id]['active']);
+			$this->assertSame(mpagoInt(dol_getIdFromCode($db, 'CB', 'c_paiement', 'code', 'id', 1)), mpagoGetPaymentModeId($db), 'A disabled mode is not used');
+		} finally {
+			$this->restoreModule($module, $wasenabled, $hadjobs);
+		}
+	}
+
+	/**
+	 * Put the module back in the state it had: enabled again when the test disabled it, disabled when
+	 * the test enabled it, and delete the scheduled jobs it left
+	 * when the instance had none.
+	 *
+	 * @param	modMpago	$module		Descriptor
+	 * @param	bool		$wasenabled	Module enabled before the test
+	 * @param	bool		$hadjobs	Scheduled jobs of the module before the test
+	 * @return	void
+	 */
+	private function restoreModule(modMpago $module, $wasenabled, $hadjobs)
+	{
+		/**
+		 * @var Conf $conf
+		 * @var DoliDB $db
+		 */
+		global $conf, $db;
+
+		if ($wasenabled && !$this->isEnabled()) {
+			$module->init();
+		}
+		if (!$wasenabled && $this->isEnabled()) {
+			$module->remove();
+		}
+		if (!$wasenabled && !$hadjobs) {
+			$db->query("DELETE FROM ".MAIN_DB_PREFIX."cronjob WHERE module_name = 'mpago' AND entity = ".((int) $conf->entity));
+		}
 	}
 
 	/**
@@ -214,7 +317,8 @@ class MpagoModuleTest extends MpagoTestCase
 			$this->assertContains($key, $keys['en_US'], 'Key '.$key.' used in '.$file.' is not translated');
 		}
 		foreach ($keys['en_US'] as $key) {
-			if (strpos($key, 'Module') !== 0) {
+			// PaymentType* keys are read by core with the code of the payment mode
+			if (strpos($key, 'Module') !== 0 && strpos($key, 'PaymentType') !== 0) {
 				$this->assertArrayHasKey($key, $used, 'Key '.$key.' is translated but not used');
 			}
 		}
