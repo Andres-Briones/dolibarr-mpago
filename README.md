@@ -1,5 +1,11 @@
 # Mpago — Mercado Pago payments for Dolibarr (Argentina)
 
+> **Work in progress, not yet tested.** Version 0.1.0 has only been run on
+> development instances against a fake Mercado Pago API, never in a real
+> installation or against Mercado Pago itself. The module id (510101) is
+> provisional and will change before a release. Do not use it in production
+> yet.
+
 Dolibarr external module that lets a customer pay an invoice or an order
 online with Mercado Pago **Checkout Pro** (Orders API), in Argentine pesos.
 
